@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCAMbay</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #013220; /* Dunkelgrün */
+            color: #FFFFFF;
+        }
+
+        header {
+            background-color: #005c2d;
+            padding: 10px;
+            text-align: center;
+            font-size: 2rem;
+            font-family: 'Creepster', cursive; /* Schriftstil wie Goosebumps */
+        }
+
+        main {
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        .post-box {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #008748;
+            border-radius: 8px;
+            background-color: #022f1e;
+        }
+
+        .post-date {
+            font-size: 0.8rem;
+            color: #aaaaaa;
+            margin-bottom: 5px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #008748;
+            background-color: #014d35;
+            color: #FFFFFF;
+            resize: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #00a859;
+            border: none;
+            border-radius: 4px;
+            color: #FFFFFF;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #007a41;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        #terms-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        #terms-modal button {
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #00a859;
+            border: none;
+            border-radius: 4px;
+            color: #FFFFFF;
+            cursor: pointer;
+        }
+
+        #terms-modal button:hover {
+            background-color: #007a41;
+        }
+    </style>
+    <script>
+        function sanitizeInput(input) {
+            const tempDiv = document.createElement('div');
+            tempDiv.textContent = input;
+            return tempDiv.innerHTML;
+        }
+
+        function submitPost() {
+            const input = document.getElementById('user-input').value.trim();
+            if (!input) {
+                alert('Bitte geben Sie einen Text ein.');
+                return;
+            }
+
+            const filteredInput = sanitizeInput(input.replace(/\b(Schimpfwort1|Schimpfwort2|Schimpfwort3|Schimpfwort4)\b/gi, '***'));
+
+            const postBox = document.createElement('div');
+            postBox.className = 'post-box';
+
+            const postDate = document.createElement('div');
+            postDate.className = 'post-date';
+            const currentDate = new Date().toLocaleDateString('de-DE');
+            postDate.textContent = `Gepostet am: ${currentDate}`;
+
+            const postContent = document.createElement('div');
+            postContent.innerHTML = filteredInput;
+
+            postBox.appendChild(postDate);
+            postBox.appendChild(postContent);
+
+            const postContainer = document.getElementById('posts');
+            postContainer.insertBefore(postBox, postContainer.firstChild);
+
+            savePost({ content: filteredInput, date: currentDate });
+
+            document.getElementById('user-input').value = '';
+        }
+
+        function savePost(post) {
+            const posts = JSON.parse(localStorage.getItem('posts')) || [];
+            posts.push(post);
+            localStorage.setItem('posts', JSON.stringify(posts));
+        }
+
+        function loadPosts() {
+            const posts = JSON.parse(localStorage.getItem('posts')) || [];
+            const postContainer = document.getElementById('posts');
+
+            posts.forEach(post => {
+                const postBox = document.createElement('div');
+                postBox.className = 'post-box';
+
+                const postDate = document.createElement('div');
+                postDate.className = 'post-date';
+                postDate.textContent = `Gepostet am: ${post.date}`;
+
+                const postContent = document.createElement('div');
+                postContent.innerHTML = post.content;
+
+                postBox.appendChild(postDate);
+                postBox.appendChild(postContent);
+                postContainer.appendChild(postBox);
+            });
+        }
+
+        // IP-Blocker (vereinfachte Demonstration)
+        function checkAccess() {
+            fetch('https://ipinfo.io/json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Netzwerkfehler');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.country !== 'DE') {
+                        document.body.innerHTML = '<h1>Zugang nur innerhalb Deutschlands erlaubt.</h1>';
+                    }
+                })
+                .catch(err => console.error('IP-Check fehlgeschlagen:', err));
+        }
+
+        function showTermsModal() {
+            const modal = document.createElement('div');
+            modal.id = 'terms-modal';
+            modal.innerHTML = `
+                <div>
+                    <h1>Willkommen bei SCAMbay</h1>
+                    <p>Bitte akzeptiere unsere Nutzungsbedingungen:</p>
+                    <ul>
+                        <li>Keine Hasspostings.</li>
+                        <li>Keine Schimpfwörter.</li>
+                        <li>Beiträge, die gegen die Regeln verstoßen, werden entfernt.</li>
+                    </ul>
+                    <button onclick="acceptTerms()">Akzeptieren</button>
+                    <button onclick="declineTerms()">Ablehnen</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function acceptTerms() {
+            document.getElementById('terms-modal').remove();
+        }
+
+        function declineTerms() {
+            document.body.innerHTML = '<h1>Zugang nicht gewährt. Nutzungsbedingungen müssen akzeptiert werden.</h1>';
+        }
+
+        window.onload = function () {
+            checkAccess();
+            showTermsModal();
+            loadPosts();
+        };
+    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Creepster&display=swap">
+</head>
+<body>
+    <header>SCAMbay</header>
+    <main>
+        <section>
+            <h2>Teile deine Erfahrungen</h2>
+            <textarea id="user-input" placeholder="Erzähle uns von deinen Erfahrungen..."></textarea>
+            <button onclick="submitPost()">Posten</button>
+        </section>
+
+        <section id="posts">
+            <h2>Beiträge</h2>
+            <!-- Beiträge erscheinen hier -->
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 SCAMbay | Keine Haftung für Nutzerbeiträge | Für den deutschen Markt entwickelt</p>
+    </footer>
+</body>
+</html>
